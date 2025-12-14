@@ -2,6 +2,7 @@ package com.hugosouza.minecraftcapitalism;
 
 import com.hugosouza.minecraftcapitalism.database.DatabaseService;
 import com.hugosouza.minecraftcapitalism.database.DbExecutor;
+import com.hugosouza.minecraftcapitalism.service.AccountService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -50,8 +51,8 @@ public class MinecraftCapitalism {
         UUID uuid = player.getUUID();
 
         DbExecutor.runAsync(() -> {
-            LOGGER.info("Iniciando conta bancária para player " + uuid);
-            DatabaseService.ensureAccountExists(uuid);
+            LOGGER.info("Iniciando conta bancária para player {}", uuid);
+            AccountService.ensureAccountExists(uuid);
         });
     }
 

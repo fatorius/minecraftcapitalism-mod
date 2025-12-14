@@ -1,8 +1,8 @@
 package com.hugosouza.minecraftcapitalism.command;
 
-import com.hugosouza.minecraftcapitalism.database.DatabaseService;
 import com.hugosouza.minecraftcapitalism.database.DbExecutor;
 import com.hugosouza.minecraftcapitalism.interfaces.Transaction;
+import com.hugosouza.minecraftcapitalism.service.TransactionService;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
@@ -26,7 +26,7 @@ public class ConsultExtrato {
         DbExecutor.runAsync(() -> {
             try {
                 List<Transaction> list =
-                        DatabaseService.getStatement(player.getUUID(), PAGE_SIZE, (page - 1) * PAGE_SIZE);
+                        TransactionService.getStatement(player.getUUID(), PAGE_SIZE, (page - 1) * PAGE_SIZE);
 
                 ctx.getSource().getServer().execute(() ->
                         sendPage(player, list, page)

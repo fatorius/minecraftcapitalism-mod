@@ -1,7 +1,7 @@
 package com.hugosouza.minecraftcapitalism.command;
 
-import com.hugosouza.minecraftcapitalism.database.DatabaseService;
 import com.hugosouza.minecraftcapitalism.database.DbExecutor;
+import com.hugosouza.minecraftcapitalism.service.AccountService;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -19,7 +19,7 @@ public class OPAddSaldo {
 
         DbExecutor.runAsync(() -> {
             try {
-                DatabaseService.addBalance(target.getUUID(), delta);
+                AccountService.addBalance(target.getUUID(), delta);
                 ctx.getSource().getServer().execute(() ->
                         ctx.getSource().sendSuccess(
                                 () -> Component.literal(

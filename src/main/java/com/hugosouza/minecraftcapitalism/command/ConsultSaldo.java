@@ -1,7 +1,7 @@
 package com.hugosouza.minecraftcapitalism.command;
 
-import com.hugosouza.minecraftcapitalism.database.DatabaseService;
 import com.hugosouza.minecraftcapitalism.database.DbExecutor;
+import com.hugosouza.minecraftcapitalism.service.AccountService;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
@@ -18,7 +18,7 @@ public class ConsultSaldo {
 
         DbExecutor.runAsync(() -> {
             try {
-                int balance = DatabaseService.getBalance(uuid);
+                int balance = AccountService.getBalance(uuid);
                 ctx.getSource().getServer().execute(() ->
                         player.sendSystemMessage(
                                 Component.literal("Seu saldo: " + balance)

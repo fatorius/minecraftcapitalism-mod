@@ -2,6 +2,7 @@ package com.hugosouza.minecraftcapitalism.command;
 
 import com.hugosouza.minecraftcapitalism.database.DatabaseService;
 import com.hugosouza.minecraftcapitalism.database.DbExecutor;
+import com.hugosouza.minecraftcapitalism.service.AccountService;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -37,7 +38,7 @@ public final class SendPix {
 
         DbExecutor.runAsync(() -> {
             try {
-                boolean success = DatabaseService.transfer(
+                boolean success = AccountService.transfer(
                         sender.getUUID(),
                         target.getUUID(),
                         amount

@@ -3,6 +3,8 @@ package com.hugosouza.minecraftcapitalism.command;
 import com.hugosouza.minecraftcapitalism.database.DatabaseService;
 import com.hugosouza.minecraftcapitalism.database.DbExecutor;
 import com.hugosouza.minecraftcapitalism.interfaces.Invoice;
+import com.hugosouza.minecraftcapitalism.service.AccountService;
+import com.hugosouza.minecraftcapitalism.service.InvoiceService;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -28,7 +30,7 @@ public class Cobrar {
 
         DbExecutor.runAsync(() -> {
             try {
-                int invoiceId = DatabaseService.createInvoice(sender.getUUID(), target.getUUID(), amount);
+                int invoiceId = InvoiceService.createInvoice(sender.getUUID(), target.getUUID(), amount);
 
                 ctx.getSource().getServer().execute(() -> {
                     sender.sendSystemMessage(Component.literal(
@@ -67,7 +69,7 @@ public class Cobrar {
 
         DbExecutor.runAsync(() -> {
             try {
-                Invoice invoice = DatabaseService.getInvoice(invoiceId);
+                Invoice invoice = InvoiceService.getInvoice(invoiceId);
 
                 if (invoice == null || !"PENDING".equals(invoice.status()) || !invoice.toUuid().equals(payer.getUUID())) {
                     ctx.getSource().getServer().execute(() ->
@@ -76,7 +78,7 @@ public class Cobrar {
                     return;
                 }
 
-                boolean success = DatabaseService.transfer(payer.getUUID(), invoice.fromUuid(), invoice.amount());
+                boolean success = AccountService.transfer(payer.getUUID(), invoice.fromUuid(), invoice.amount());
 
                 if (success) {
                     DatabaseService.markAsPaid(invoiceId);
@@ -116,7 +118,7 @@ public class Cobrar {
 
         DbExecutor.runAsync(() -> {
             try {
-                Invoice invoice = DatabaseService.getInvoice(invoiceId);
+                Invoice invoice = InvoiceService.getInvoice(invoiceId);
 
                 if (invoice == null || !"PENDING".equals(invoice.status()) || !invoice.toUuid().equals(payer.getUUID())) {
                     ctx.getSource().getServer().execute(() ->
