@@ -1,5 +1,6 @@
 package com.hugosouza.minecraftcapitalism.database;
 
+import com.hugosouza.minecraftcapitalism.interfaces.Invoice;
 import com.hugosouza.minecraftcapitalism.interfaces.Transaction;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
@@ -98,6 +99,55 @@ public final class DatabaseService {
         }
     }
 
+    public static int createInvoice(UUID from, UUID to, int amount) throws SQLException {
+        String sql = "INSERT INTO invoices (from_uuid, to_uuid, amount, created_at) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, from.toString());
+            stmt.setString(2, to.toString());
+            stmt.setInt(3, amount);
+            stmt.setLong(4, System.currentTimeMillis());
+            stmt.executeUpdate();
+
+            ResultSet keys = stmt.getGeneratedKeys();
+            if (keys.next()) return keys.getInt(1);
+            else throw new SQLException("Não foi possível criar a cobrança");
+        }
+    }
+
+    public static Invoice getInvoice(int id) throws SQLException {
+        String sql = "SELECT id, from_uuid, to_uuid, amount, status, created_at FROM invoices WHERE id = ?";
+        try (PreparedStatement stmt = DatabaseService.get().prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (!rs.next()) return null;
+
+            return new Invoice(
+                    rs.getInt("id"),
+                    UUID.fromString(rs.getString("from_uuid")),
+                    UUID.fromString(rs.getString("to_uuid")),
+                    rs.getInt("amount"),
+                    rs.getString("status"),
+                    rs.getLong("created_at")
+            );
+        }
+    }
+
+    public static void markAsPaid(int id) throws SQLException {
+        String sql = "UPDATE invoices SET status = 'PAID' WHERE id = ?";
+        try (PreparedStatement stmt = DatabaseService.get().prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
+    }
+
+    public static void markAsCancelled(int id) throws SQLException {
+        String sql = "UPDATE invoices SET status = 'CANCELLED' WHERE id = ?";
+        try (PreparedStatement stmt = DatabaseService.get().prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
+    }
+
     public static boolean transfer(UUID from, UUID to, int amount) throws SQLException {
         connection.setAutoCommit(false);
 
@@ -148,12 +198,12 @@ public final class DatabaseService {
             throws SQLException {
 
         String sql = """
-        SELECT from_uuid, to_uuid, amount, type, created_at
-        FROM transactions
-        WHERE from_uuid = ? OR to_uuid = ?
-        ORDER BY created_at DESC
-        LIMIT ? OFFSET ?
-    """;
+            SELECT from_uuid, to_uuid, amount, type, created_at
+            FROM transactions
+            WHERE from_uuid = ? OR to_uuid = ?
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        """;
 
         List<Transaction> result = new ArrayList<>();
 
@@ -213,18 +263,32 @@ public final class DatabaseService {
         }
     }
 
-    private static void initSchema() throws SQLException {
-        LOGGER.info("Iniciando tabelas no banco de dados do capitalismo");
+    private static void createAccountTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+                   CREATE TABLE IF NOT EXISTS accounts (
+                        uuid TEXT PRIMARY KEY,
+                        INTEGER NOT NULL
+                   );
+                """);
+    }
 
-        try (Statement stmt = connection.createStatement()) {
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS accounts (
-                    uuid TEXT PRIMARY KEY,
-                    balance INTEGER NOT NULL
-                );
-            """);
+    private static void createInvoiceTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+                   CREATE TABLE IF NOT EXISTS invoices (
+                       id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       from_uuid TEXT NOT NULL,
+                       to_uuid TEXT NOT NULL,
+                       amount INTEGER NOT NULL CHECK (amount > 0),
+                       status TEXT NOT NULL DEFAULT 'PENDING', -- PENDING, PAID, CANCELLED
+                       created_at INTEGER NOT NULL,
+                       FOREIGN KEY(from_uuid) REFERENCES accounts(uuid),
+                       FOREIGN KEY(to_uuid) REFERENCES accounts(uuid)
+                   );
+                """);
+    }
 
-            stmt.execute("""
+    private static void createTransactionsTable(Statement stmt) throws SQLException {
+        stmt.execute("""
                 CREATE TABLE IF NOT EXISTS transactions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     from_uuid TEXT NULL,
@@ -237,20 +301,29 @@ public final class DatabaseService {
                 );
             """);
 
-            stmt.execute("""
+        stmt.execute("""
                 CREATE INDEX IF NOT EXISTS idx_transactions_from
                 ON transactions(from_uuid);
             """);
 
-                stmt.execute("""
+        stmt.execute("""
                 CREATE INDEX IF NOT EXISTS idx_transactions_to
                 ON transactions(to_uuid);
             """);
 
-                stmt.execute("""
+        stmt.execute("""
                 CREATE INDEX IF NOT EXISTS idx_transactions_created_at
                 ON transactions(created_at);
             """);
+    }
+
+    private static void initSchema() throws SQLException {
+        LOGGER.info("Iniciando tabelas no banco de dados do capitalismo");
+
+        try (Statement stmt = connection.createStatement()) {
+            createAccountTable(stmt);
+            createTransactionsTable(stmt);
+            createInvoiceTable(stmt);
         }
     }
 }

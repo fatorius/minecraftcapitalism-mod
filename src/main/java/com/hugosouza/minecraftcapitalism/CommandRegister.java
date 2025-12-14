@@ -60,6 +60,32 @@ public final class CommandRegister {
                                 })
                         )
         );
-    }
 
+        // /cobrar <player> <value>
+        dispatcher.register(
+                Commands.literal("cobrar")
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.argument("valor", IntegerArgumentType.integer(1))
+                                        .executes(Cobrar::criar)
+                                )
+                        )
+        );
+
+        // /pagarcobranca
+        dispatcher.register(
+                Commands.literal("pagarcobranca")
+                        .then(Commands.argument("id", IntegerArgumentType.integer(1))
+                                .executes(Cobrar::pagar)
+                        )
+        );
+
+        // /recusarcobranca
+                dispatcher.register(
+                        Commands.literal("recusarcobranca")
+                                .then(Commands.argument("id", IntegerArgumentType.integer(1))
+                                        .executes(Cobrar::recusar)
+                                )
+                );
+
+    }
 }
