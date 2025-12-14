@@ -4,18 +4,12 @@ import com.hugosouza.minecraftcapitalism.command.ConsultSaldo;
 import com.hugosouza.minecraftcapitalism.command.OPAddSaldo;
 import com.hugosouza.minecraftcapitalism.command.OPSetSaldo;
 import com.hugosouza.minecraftcapitalism.command.SendPix;
-import com.hugosouza.minecraftcapitalism.database.DatabaseService;
-import com.hugosouza.minecraftcapitalism.database.DbExecutor;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 
 import net.minecraft.commands.arguments.EntityArgument;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-
-import java.sql.SQLException;
 
 public final class CommandRegister {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
