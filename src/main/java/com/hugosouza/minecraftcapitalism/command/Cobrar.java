@@ -81,7 +81,7 @@ public class Cobrar {
                 boolean success = AccountService.transfer(payer.getUUID(), invoice.fromUuid(), invoice.amount());
 
                 if (success) {
-                    DatabaseService.markAsPaid(invoiceId);
+                    InvoiceService.markAsPaid(invoiceId);
 
                     ctx.getSource().getServer().execute(() -> {
                         payer.sendSystemMessage(Component.literal("Cobrança paga com sucesso!"));
@@ -127,7 +127,7 @@ public class Cobrar {
                     return;
                 }
 
-                DatabaseService.markAsCancelled(invoiceId);
+                InvoiceService.markAsCancelled(invoiceId);
 
                 ctx.getSource().getServer().execute(() -> {
                     payer.sendSystemMessage(Component.literal("Cobrança recusada!"));

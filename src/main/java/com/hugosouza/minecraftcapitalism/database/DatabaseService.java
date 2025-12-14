@@ -24,25 +24,6 @@ public final class DatabaseService {
         return connection;
     }
 
-
-    public static void markAsPaid(int id) throws SQLException {
-        String sql = "UPDATE invoices SET status = 'PAID' WHERE id = ?";
-        try (PreparedStatement stmt = DatabaseService.get().prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            stmt.executeUpdate();
-        }
-    }
-
-    public static void markAsCancelled(int id) throws SQLException {
-        String sql = "UPDATE invoices SET status = 'CANCELLED' WHERE id = ?";
-        try (PreparedStatement stmt = DatabaseService.get().prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            stmt.executeUpdate();
-        }
-    }
-
-
-
     private static void initPragmas() throws SQLException {
         try (Statement stmt = connection.createStatement()) {
             stmt.execute("PRAGMA journal_mode=WAL;");
