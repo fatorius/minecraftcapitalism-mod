@@ -1,6 +1,5 @@
 package com.hugosouza.minecraftcapitalism;
 
-import com.hugosouza.minecraftcapitalism.command.ModCommands;
 import com.hugosouza.minecraftcapitalism.database.DatabaseService;
 import com.hugosouza.minecraftcapitalism.database.DbExecutor;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,7 +10,6 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
-import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.UUID;
 
@@ -60,6 +58,6 @@ public class MinecraftCapitalism {
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         LOGGER.info("Registrando comandos do capitalismo");
-        ModCommands.register(event.getDispatcher());
+        CommandRegister.register(event.getDispatcher());
     }
 }
