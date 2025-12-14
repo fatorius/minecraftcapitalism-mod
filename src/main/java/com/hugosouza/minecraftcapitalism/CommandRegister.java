@@ -1,9 +1,6 @@
 package com.hugosouza.minecraftcapitalism;
 
-import com.hugosouza.minecraftcapitalism.command.ConsultSaldo;
-import com.hugosouza.minecraftcapitalism.command.OPAddSaldo;
-import com.hugosouza.minecraftcapitalism.command.OPSetSaldo;
-import com.hugosouza.minecraftcapitalism.command.SendPix;
+import com.hugosouza.minecraftcapitalism.command.*;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -46,6 +43,21 @@ public final class CommandRegister {
                         .then(Commands.argument("player", EntityArgument.player())
                                 .then(Commands.argument("valor", IntegerArgumentType.integer()))
                         .executes(SendPix::run)
+                        )
+        );
+
+        // /extrato
+        dispatcher.register(
+                Commands.literal("extrato")
+                        // /extrato (página 1 por padrão)
+                        .executes(ctx -> ConsultExtrato.run(ctx, 1))
+
+                        // /extrato <page>
+                        .then(Commands.argument("page", IntegerArgumentType.integer(1))
+                                .executes(ctx -> {
+                                    int page = IntegerArgumentType.getInteger(ctx, "page");
+                                    return ConsultExtrato.run(ctx, page);
+                                })
                         )
         );
     }
