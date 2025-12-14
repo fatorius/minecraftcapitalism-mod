@@ -9,12 +9,14 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.UUID;
 
 public class ConsultExtrato {
     private static final int PAGE_SIZE = 5;
@@ -29,7 +31,7 @@ public class ConsultExtrato {
                         TransactionService.getStatement(player.getUUID(), PAGE_SIZE, (page - 1) * PAGE_SIZE);
 
                 ctx.getSource().getServer().execute(() ->
-                        sendPage(player, list, page)
+                        sendPage(player, list, page, ctx)
                 );
 
             } catch (SQLException e) {
@@ -44,35 +46,44 @@ public class ConsultExtrato {
         return 1;
     }
 
-    private static void sendPage(
-            ServerPlayer player,
-            List<Transaction> list,
-            int page
-    ) {
+    private static void sendPage(ServerPlayer player, List<Transaction> list, int page, CommandContext<CommandSourceStack> ctx) {
         player.sendSystemMessage(
                 Component.literal("§6=== Extrato (Página " + page + ") ===")
         );
 
         if (list.isEmpty()) {
-            player.sendSystemMessage(
-                    Component.literal("Sem transações")
-            );
+            player.sendSystemMessage(Component.literal("§7Sem transações"));
             return;
         }
 
         for (Transaction tx : list) {
-            String line =
-                    tx.type() + " | " +
-                            tx.amount() + " | " +
+            boolean isIncoming = player.getUUID().toString().equals(tx.to());
+            String otherPlayerUUID = isIncoming ? tx.from() : tx.to();
+            ServerPlayer sp = ctx.getSource().getServer().getPlayerList().getPlayer(UUID.fromString(otherPlayerUUID));
+
+            int amount = tx.amount();
+
+            String sign = isIncoming ? "+" : "-";
+            int color = isIncoming ? 0x00FF00 : 0xFF5555;
+
+            assert sp != null;
+
+            Component line = Component.literal(
+                            "[" + tx.type() + "] " +
+                                    sign + amount + " | " + sp.getName().getString() + " | "
+                    ).withStyle(style -> style.withColor(TextColor.fromRgb(color)))
+                    .append(Component.literal(
                             Instant.ofEpochMilli(tx.timestamp())
                                     .atZone(ZoneId.systemDefault())
-                                    .toLocalDateTime();
+                                    .toLocalDateTime().toString()
+                    ).withStyle(style -> style.withColor(TextColor.fromRgb(0xAAAAAA))));
 
-            player.sendSystemMessage(Component.literal(line));
+            player.sendSystemMessage(line);
         }
 
         player.sendSystemMessage(buildPaginationComponent(page));
     }
+
 
     private static Component buildPaginationComponent(int page) {
         MutableComponent prev = Component.literal("« Anterior ")
