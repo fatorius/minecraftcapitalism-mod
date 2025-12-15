@@ -1,6 +1,5 @@
 package com.hugosouza.minecraftcapitalism.command;
 
-import com.hugosouza.minecraftcapitalism.database.DatabaseService;
 import com.hugosouza.minecraftcapitalism.database.DbExecutor;
 import com.hugosouza.minecraftcapitalism.interfaces.Invoice;
 import com.hugosouza.minecraftcapitalism.service.AccountService;

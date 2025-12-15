@@ -62,7 +62,7 @@ public final class DatabaseService {
                     from_uuid TEXT NULL,
                     to_uuid   TEXT NULL,
                     amount INTEGER NOT NULL CHECK (amount > 0),
-                    type TEXT NOT NULL, -- PIX, TAX, REWARD, ADMIN_SET, ADMIN_ADD
+                    type TEXT NOT NULL, -- PIX, TAX, REWARD, ADMIN_SET, ADMIN_ADD, TIGRINHO_BET, TIGRINHO_WIN
                     created_at INTEGER NOT NULL, -- epoch millis
                     FOREIGN KEY (from_uuid) REFERENCES accounts(uuid),
                     FOREIGN KEY (to_uuid)   REFERENCES accounts(uuid)

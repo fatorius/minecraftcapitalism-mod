@@ -46,7 +46,7 @@ public class TransactionService {
     }
 
 
-    static void recordTransaction(
+    public static void recordTransaction(
             UUID from,
             UUID to,
             int amount,

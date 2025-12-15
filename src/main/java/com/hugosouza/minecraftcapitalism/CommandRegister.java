@@ -42,7 +42,7 @@ public final class CommandRegister {
                 Commands.literal("pix")
                         .then(Commands.argument("player", EntityArgument.player())
                                 .then(Commands.argument("valor", IntegerArgumentType.integer()))
-                        .executes(SendPix::run)
+                                .executes(SendPix::run)
                         )
         );
 
@@ -80,12 +80,20 @@ public final class CommandRegister {
         );
 
         // /recusarcobranca
-                dispatcher.register(
-                        Commands.literal("recusarcobranca")
-                                .then(Commands.argument("id", IntegerArgumentType.integer(1))
-                                        .executes(Cobrar::recusar)
-                                )
-                );
+        dispatcher.register(
+                Commands.literal("recusarcobranca")
+                        .then(Commands.argument("id", IntegerArgumentType.integer(1))
+                                .executes(Cobrar::recusar)
+                        )
+        );
+
+        // /tigrinho
+        dispatcher.register(
+                Commands.literal("tigrinho")
+                        .then(Commands.argument("value", IntegerArgumentType.integer(1))
+                                .executes(Tigrinho::run)
+                        )
+        );
 
     }
 }
