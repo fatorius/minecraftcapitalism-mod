@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class ConsultExtrato {
@@ -59,18 +60,40 @@ public class ConsultExtrato {
         for (Transaction tx : list) {
             boolean isIncoming = player.getUUID().toString().equals(tx.to());
             String otherPlayerUUID = isIncoming ? tx.from() : tx.to();
-            ServerPlayer sp = ctx.getSource().getServer().getPlayerList().getPlayer(UUID.fromString(otherPlayerUUID));
+
+            String senderName = "";
+
+            if (!isIncoming){
+                if (Objects.equals(tx.type(), "TIGRINHO_BET")){
+                    senderName = "Tigrinho";
+                }
+                else{
+                    try{
+                        senderName = ctx.getSource().getServer().getPlayerList().getPlayer(UUID.fromString(otherPlayerUUID)).getName().getString();
+                    } catch (NullPointerException ignored) {}
+                }
+            }
+            else{
+                if (Objects.equals(tx.type(), "TIGRINHO_WIN")){
+                    senderName = "Tigrinho";
+                }
+                else{
+                    try{
+                        senderName = ctx.getSource().getServer().getPlayerList().getPlayer(UUID.fromString(otherPlayerUUID)).getName().getString();
+                    } catch (NullPointerException ignored) {}
+                }
+            }
+
+
 
             int amount = tx.amount();
 
             String sign = isIncoming ? "+" : "-";
             int color = isIncoming ? 0x00FF00 : 0xFF5555;
 
-            assert sp != null;
-
             Component line = Component.literal(
                             "[" + tx.type() + "] " +
-                                    sign + amount + " | " + sp.getName().getString() + " | "
+                                    sign + amount + " | " + senderName + " | "
                     ).withStyle(style -> style.withColor(TextColor.fromRgb(color)))
                     .append(Component.literal(
                             Instant.ofEpochMilli(tx.timestamp())

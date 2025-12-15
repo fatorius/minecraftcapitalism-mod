@@ -45,13 +45,13 @@ public class TransactionService {
         return result;
     }
 
-
     public static void recordTransaction(
             UUID from,
             UUID to,
             int amount,
             String type
     ) throws SQLException {
+        int modAmount = Math.abs(amount);
 
         String sql = """
             INSERT INTO transactions
@@ -66,7 +66,7 @@ public class TransactionService {
             if (to == null) stmt.setNull(2, Types.VARCHAR);
             else stmt.setString(2, to.toString());
 
-            stmt.setInt(3, amount);
+            stmt.setInt(3, modAmount);
             stmt.setString(4, type);
             stmt.setLong(5, System.currentTimeMillis());
             stmt.executeUpdate();

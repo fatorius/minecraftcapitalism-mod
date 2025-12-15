@@ -129,4 +129,49 @@ public class AccountService {
         }
     }
 
+    public static void addBalance(UUID uuid, int delta, String transactionType) throws SQLException {
+        DatabaseService.get().setAutoCommit(false);
+
+        try (PreparedStatement stmt =
+                     DatabaseService.get().prepareStatement(
+                             "UPDATE accounts SET balance = balance + ? WHERE uuid = ?")) {
+
+            stmt.setInt(1, delta);
+            stmt.setString(2, uuid.toString());
+            stmt.executeUpdate();
+
+            TransactionService.recordTransaction(null, uuid, delta, transactionType);
+
+            DatabaseService.get().commit();
+
+        } catch (SQLException e) {
+            DatabaseService.get().rollback();
+            throw e;
+        } finally {
+            DatabaseService.get().setAutoCommit(true);
+        }
+    }
+
+    public static void removeBalance(UUID uuid, int delta, String transactionType) throws SQLException {
+        DatabaseService.get().setAutoCommit(false);
+
+        try (PreparedStatement stmt =
+                     DatabaseService.get().prepareStatement(
+                             "UPDATE accounts SET balance = balance + ? WHERE uuid = ?")) {
+
+            stmt.setInt(1, delta);
+            stmt.setString(2, uuid.toString());
+            stmt.executeUpdate();
+
+            TransactionService.recordTransaction(uuid, null, delta, transactionType);
+
+            DatabaseService.get().commit();
+
+        } catch (SQLException e) {
+            DatabaseService.get().rollback();
+            throw e;
+        } finally {
+            DatabaseService.get().setAutoCommit(true);
+        }
+    }
 }

@@ -2,14 +2,16 @@ package com.hugosouza.minecraftcapitalism;
 
 import com.hugosouza.minecraftcapitalism.command.*;
 import com.mojang.brigadier.CommandDispatcher;
+import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 
 import net.minecraft.commands.arguments.EntityArgument;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import net.minecraft.commands.arguments.item.ItemArgument;
 
 public final class CommandRegister {
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext commandContext) {
         dispatcher.register(
                 Commands.literal("saldo")
                         .requires(src -> src.hasPermission(0))
@@ -91,9 +93,32 @@ public final class CommandRegister {
         dispatcher.register(
                 Commands.literal("tigrinho")
                         .then(Commands.argument("value", IntegerArgumentType.integer(1))
-                                .executes(Tigrinho::run)
+                                .executes(Tigrinho::apostar)
                         )
         );
 
+        // /sell <item> <quantidade> <valor>
+        dispatcher.register(
+                Commands.literal("sell")
+                        .then(Commands.argument("item", ItemArgument.item(commandContext))
+                                .then(Commands.argument("quantidade", IntegerArgumentType.integer(1))
+                                        .then(Commands.argument("valor", IntegerArgumentType.integer(1))
+                                                .executes(Mercado::sell)
+                                        )
+                                )
+                        )
+        );
+
+        // /mercado
+        dispatcher.register(
+                Commands.literal("mercado")
+                        .then(Commands.argument("item", ItemArgument.item(commandContext))
+                                .then(Commands.argument("quantidade", IntegerArgumentType.integer(1))
+                                        .then(Commands.argument("valor", IntegerArgumentType.integer(1))
+                                                .executes(Mercado::sell)
+                                        )
+                                )
+                        )
+        );
     }
 }

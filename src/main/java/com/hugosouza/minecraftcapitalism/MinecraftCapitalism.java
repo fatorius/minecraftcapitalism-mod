@@ -59,6 +59,6 @@ public class MinecraftCapitalism {
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         LOGGER.info("Registrando comandos do capitalismo");
-        CommandRegister.register(event.getDispatcher());
+        CommandRegister.register(event.getDispatcher(), event.getBuildContext());
     }
 }
