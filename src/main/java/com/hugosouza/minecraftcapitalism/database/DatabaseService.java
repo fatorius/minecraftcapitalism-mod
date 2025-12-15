@@ -35,7 +35,7 @@ public final class DatabaseService {
         stmt.execute("""
                    CREATE TABLE IF NOT EXISTS accounts (
                         uuid TEXT PRIMARY KEY,
-                        INTEGER NOT NULL
+                        balance INTEGER NOT NULL
                    );
                 """);
     }
