@@ -51,7 +51,7 @@ public final class Tigrinho {
                         player.sendSystemMessage(
                                 Component.literal(
                                         "Tigrinho: VOCÊ GANHOU!!!! Multiplicador: " + multiplier +
-                                                " | Resultado: +" + resultAmount
+                                                " | Lucro: +" + (resultAmount - bet)
                                 )
                         );
                     }
