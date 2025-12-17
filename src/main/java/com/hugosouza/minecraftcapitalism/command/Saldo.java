@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import java.sql.SQLException;
 import java.util.UUID;
 
-public class ConsultSaldo {
+public class Saldo {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public static int run(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

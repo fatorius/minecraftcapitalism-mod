@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-public class ConsultExtrato {
+public class Extrato {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final int PAGE_SIZE = 5;

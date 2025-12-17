@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.UUID;
 
 
@@ -46,7 +47,7 @@ public class AccountService {
             credit.setString(2, to.toString());
             credit.executeUpdate();
 
-            TransactionService.recordTransaction(from, to, amount, "PIX");
+            recordTransaction(from, to, amount, "PIX");
 
             DatabaseService.get().commit();
             return true;
@@ -56,6 +57,34 @@ public class AccountService {
             throw e;
         } finally {
             DatabaseService.get().setAutoCommit(true);
+        }
+    }
+
+    private static void recordTransaction(
+            UUID from,
+            UUID to,
+            int amount,
+            String type
+    ) throws SQLException {
+        int modAmount = Math.abs(amount);
+
+        String sql = """
+            INSERT INTO transactions
+            (from_uuid, to_uuid, amount, type, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        """;
+
+        try (PreparedStatement stmt = DatabaseService.get().prepareStatement(sql)) {
+            if (from == null) stmt.setNull(1, Types.VARCHAR);
+            else stmt.setString(1, from.toString());
+
+            if (to == null) stmt.setNull(2, Types.VARCHAR);
+            else stmt.setString(2, to.toString());
+
+            stmt.setInt(3, modAmount);
+            stmt.setString(4, type);
+            stmt.setLong(5, System.currentTimeMillis());
+            stmt.executeUpdate();
         }
     }
 
@@ -94,7 +123,7 @@ public class AccountService {
             stmt.setString(2, uuid.toString());
             stmt.executeUpdate();
 
-            TransactionService.recordTransaction(null, uuid, value, "ADMIN_SET");
+            recordTransaction(null, uuid, value, "ADMIN_SET");
 
             DatabaseService.get().commit();
 
@@ -117,7 +146,7 @@ public class AccountService {
             stmt.setString(2, uuid.toString());
             stmt.executeUpdate();
 
-            TransactionService.recordTransaction(null, uuid, delta, "ADMIN_ADD");
+            recordTransaction(null, uuid, delta, "ADMIN_ADD");
 
             DatabaseService.get().commit();
 
@@ -140,7 +169,7 @@ public class AccountService {
             stmt.setString(2, uuid.toString());
             stmt.executeUpdate();
 
-            TransactionService.recordTransaction(null, uuid, delta, transactionType);
+            recordTransaction(null, uuid, delta, transactionType);
 
             DatabaseService.get().commit();
 
@@ -157,13 +186,13 @@ public class AccountService {
 
         try (PreparedStatement stmt =
                      DatabaseService.get().prepareStatement(
-                             "UPDATE accounts SET balance = balance + ? WHERE uuid = ?")) {
+                             "UPDATE accounts SET balance = balance - ? WHERE uuid = ?")) {
 
             stmt.setInt(1, delta);
             stmt.setString(2, uuid.toString());
             stmt.executeUpdate();
 
-            TransactionService.recordTransaction(uuid, null, delta, transactionType);
+            recordTransaction(uuid, null, delta, transactionType);
 
             DatabaseService.get().commit();
 

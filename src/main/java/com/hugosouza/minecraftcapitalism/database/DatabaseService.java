@@ -62,7 +62,7 @@ public final class DatabaseService {
                        owner_uuid TEXT NOT NULL,
                        item_id TEXT NOT NULL,
                        quantity INTEGER NOT NULL CHECK (quantity > 0),
-                       unit_price INTEGER NOT NULL CHECK (unit_price > 0),
+                       price INTEGER NOT NULL CHECK (price > 0),
                        created_at INTEGER NOT NULL, -- epoch millis
                 
                        FOREIGN KEY (owner_uuid) REFERENCES accounts(uuid)
@@ -78,7 +78,7 @@ public final class DatabaseService {
             """);
 
         stmt.execute("""
-                CREATE INDEX IF NOT EXISTS idx_market_price ON market_listings(unit_price);
+                CREATE INDEX IF NOT EXISTS idx_market_price ON market_listings(price);
             """);
 
         stmt.execute("""

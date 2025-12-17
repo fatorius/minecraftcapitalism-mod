@@ -21,7 +21,7 @@ public final class CommandRegister {
             .then(Commands.literal("saldo")
                 .requires(src -> src.hasPermission(0))
 
-                .executes(ConsultSaldo::run)
+                .executes(Saldo::run)
 
                 // /saldo set <player> <valor>
                 .then(Commands.literal("set")
@@ -68,14 +68,14 @@ public final class CommandRegister {
                     Commands.literal("extrato")
 
                     // página 1 por padrão
-                    .executes(ctx -> ConsultExtrato.run(ctx, 1))
+                    .executes(ctx -> Extrato.run(ctx, 1))
                     
                     .then(
                         // /extrato <page>
                         Commands.argument("page", IntegerArgumentType.integer(1))
                         .executes(ctx -> {
                             int page = IntegerArgumentType.getInteger(ctx, "page");
-                            return ConsultExtrato.run(ctx, page);
+                            return Extrato.run(ctx, page);
                         })
                     )
                 )
@@ -149,17 +149,26 @@ public final class CommandRegister {
             .then(
                 dispatcher.register(
                     Commands.literal("mercado")
-                    .then(
-                        Commands.argument("item", ItemArgument.item(commandContext))
+
+                    // página 1 por padrão
+                    .executes(ctx -> Mercado.list(ctx, 1))
+
+                    // /extrato <page>
+                    .then(Commands.argument("page", IntegerArgumentType.integer(1))
+                        .executes(ctx -> {
+                            int page = IntegerArgumentType.getInteger(ctx, "page");
+                            return Mercado.list(ctx, page);
+                        })
+                    )
+
+                    // /mercado buy <id>
+                    .then(Commands.literal("buy")
                         .then(
-                            Commands.argument("quantidade", IntegerArgumentType.integer(1))
-                            .then(
-                                Commands.argument("valor", IntegerArgumentType.integer(1))
-                                .executes(Mercado::sell)
-                            )
+                            Commands.argument("id", IntegerArgumentType.integer(1))
+                            .executes(Mercado::buy)
                         )
                     )
-                );
+                )
             )
         );
     }
