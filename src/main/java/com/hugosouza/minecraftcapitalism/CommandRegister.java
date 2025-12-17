@@ -162,10 +162,37 @@ public final class CommandRegister {
                     )
 
                     // /mercado buy <id>
-                    .then(Commands.literal("buy")
+                    .then(
+                        Commands.literal("buy")
                         .then(
                             Commands.argument("id", IntegerArgumentType.integer(1))
                             .executes(Mercado::buy)
+                        )
+                    )
+
+                    // /mercado cancel <id>
+                    .then(
+                        Commands.literal("cancel")
+                        .then(
+                            Commands.argument("id", IntegerArgumentType.integer(1))
+                            .executes(Mercado::cancel)
+                        )
+                    )
+
+                    // /mercado meusanuncios
+                    .then(
+                        Commands.literal("meusanuncios")
+
+                        // página 1 por padrão
+                        .executes(ctx -> Mercado.myAds(ctx, 1))
+
+                        // /mercado meusanuncios <page>
+                        .then(
+                            Commands.argument("page", IntegerArgumentType.integer(1))
+                            .executes(ctx -> {
+                                int page = IntegerArgumentType.getInteger(ctx, "page");
+                                return Mercado.myAds(ctx, page);
+                            })
                         )
                     )
                 )

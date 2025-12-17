@@ -92,6 +92,47 @@ public class ListingService {
         return list;
     }
 
+    public static ArrayList<MarketListing> listMyAds(int limit, int offset, String owner_id) throws SQLException {
+        String sql = """
+            SELECT id, owner_uuid, item_id, quantity, price, created_at
+            FROM market_listings WHERE owner_uuid = ?
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        """;
+
+        ArrayList<MarketListing> list = new ArrayList<>();
+
+        try (PreparedStatement stmt = DatabaseService.get().prepareStatement(sql)) {
+            stmt.setString(1, owner_id);
+            stmt.setInt(2, limit);
+            stmt.setInt(3, offset);
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                list.add(new MarketListing(
+                        rs.getInt("id"),
+                        UUID.fromString(rs.getString("owner_uuid")),
+                        rs.getString("item_id"),
+                        rs.getInt("quantity"),
+                        rs.getInt("price"),
+                        rs.getLong("created_at")
+                ));
+            }
+        }
+        return list;
+    }
+
+    public static boolean deleteById(int id) throws SQLException {
+        String sql = "DELETE FROM market_listings WHERE id = ?";
+
+        try (PreparedStatement stmt =
+                     DatabaseService.get().prepareStatement(sql)) {
+
+            stmt.setInt(1, id);
+            return stmt.executeUpdate() == 1;
+        }
+    }
+
     public static boolean buyListing(
             MarketListing listing,
             UUID buyer

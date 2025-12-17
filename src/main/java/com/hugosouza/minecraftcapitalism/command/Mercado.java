@@ -169,6 +169,73 @@ public class Mercado {
         return 1;
     }
 
+    public static int cancel(CommandContext<CommandSourceStack> ctx)
+            throws CommandSyntaxException {
+
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        int listingId = IntegerArgumentType.getInteger(ctx, "id");
+
+        DbExecutor.runAsync(() -> {
+            try {
+                MarketListing listing = ListingService.getById(listingId);
+
+                if (listing == null) {
+                    ctx.getSource().getServer().execute(() ->
+                            player.sendSystemMessage(
+                                    Component.literal("Anúncio não encontrado")
+                            )
+                    );
+                    return;
+                }
+
+                UUID owner = listing.owner();
+
+                if (!player.getUUID().equals(owner)) {
+                    ctx.getSource().getServer().execute(() ->
+                            player.sendSystemMessage(
+                                    Component.literal("Você não é o dono deste anúncio")
+                            )
+                    );
+                    return;
+                }
+
+                boolean removed = ListingService.deleteById(listingId);
+
+                ctx.getSource().getServer().execute(() -> {
+                    if (removed) {
+                        // Devolver os itens
+                        ItemStack stack = new ItemStack(
+                                BuiltInRegistries.ITEM.get(
+                                        ResourceLocation.parse(listing.itemId())
+                                ),
+                                listing.quantity()
+                        );
+
+                        player.getInventory().add(stack);
+
+                        player.sendSystemMessage(
+                                Component.literal("Anúncio cancelado e itens devolvidos")
+                        );
+                    } else {
+                        player.sendSystemMessage(
+                                Component.literal("Erro ao cancelar anúncio")
+                        );
+                    }
+                });
+
+            } catch (SQLException e) {
+                ctx.getSource().getServer().execute(() ->
+                        player.sendSystemMessage(
+                                Component.literal("Erro interno ao cancelar anúncio")
+                        )
+                );
+            }
+        });
+
+        return 1;
+    }
+
+
     public static int list(CommandContext<CommandSourceStack> ctx, int page)
             throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
@@ -185,6 +252,30 @@ public class Mercado {
             } catch (SQLException e) {
                 ctx.getSource().getServer().execute(() ->
                         player.sendSystemMessage(Component.literal("Erro ao carregar mercado"))
+                );
+            }
+        });
+
+        return 1;
+    }
+
+    public static int myAds(CommandContext<CommandSourceStack> ctx, int page)
+            throws CommandSyntaxException {
+
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+
+        DbExecutor.runAsync(() -> {
+            try {
+                ArrayList<MarketListing> listings =
+                        ListingService.listMyAds(PAGE_SIZE, (page - 1) * PAGE_SIZE, player.getUUID().toString());
+
+                ctx.getSource().getServer().execute(() ->
+                        sendMyAdsPage(player, listings, page, ctx)
+                );
+
+            } catch (SQLException e) {
+                ctx.getSource().getServer().execute(() ->
+                        player.sendSystemMessage(Component.literal("Erro ao carregar seus anuncios"))
                 );
             }
         });
@@ -291,5 +382,80 @@ public class Mercado {
         return prev.append(middle).append(next);
     }
 
+    private static void sendMyAdsPage(
+            ServerPlayer player,
+            ArrayList<MarketListing> list,
+            int page,
+            CommandContext<CommandSourceStack> ctx
+    ) {
+        player.sendSystemMessage(
+                Component.literal("§6=== Mercado (Página " + page + ") ===")
+        );
+
+        if (list.isEmpty()) {
+            player.sendSystemMessage(Component.literal("§7Sem anúncios"));
+            return;
+        }
+
+        for (MarketListing l : list) {
+            Component line = Component.literal(
+                            l.quantity() + "x" + " - " + l.itemId()
+                    ).withStyle(style -> style.withColor(TextColor.fromRgb(0x00FFAA)))
+                    .append(Component.literal(
+                            " | $" + l.unitPrice()
+                    ).withStyle(style -> style.withColor(TextColor.fromRgb(0xFFFF55))))
+                    .append(Component.literal(" "))
+                    .append(
+                            Component.literal("[Cancelar]")
+                                    .withStyle(style -> style
+                                            .withColor(TextColor.fromRgb(0xFF0000))
+                                            .withBold(true)
+                                            .withClickEvent(
+                                                    new ClickEvent(
+                                                            ClickEvent.Action.RUN_COMMAND,
+                                                            "/mercado cancel " + l.id()
+                                                    )
+                                            )
+                                            .withHoverEvent(
+                                                    new HoverEvent(
+                                                            HoverEvent.Action.SHOW_TEXT,
+                                                            Component.literal("Clique para remover esse anuncio")
+                                                    )
+                                            )
+                                    )
+                    );
+            player.sendSystemMessage(line);
+        }
+
+        player.sendSystemMessage(buildMyAdsPaginationComponent(page));
+    }
+
+    private static Component buildMyAdsPaginationComponent(int page) {
+        MutableComponent prev = Component.literal("« Anterior ")
+                .withStyle(style -> style.withClickEvent(
+                        new ClickEvent(
+                                ClickEvent.Action.RUN_COMMAND,
+                                "/mercado meusanuncios" + (page - 1)
+                        )
+                ));
+
+        Component next = Component.literal(" Próxima »")
+                .withStyle(style -> style.withClickEvent(
+                        new ClickEvent(
+                                ClickEvent.Action.RUN_COMMAND,
+                                "/mercado meusanuncios" + (page + 1)
+                        )
+                ));
+
+        Component middle = Component.literal(
+                " §7[Página " + page + "] "
+        );
+
+        if (page <= 1) {
+            prev = Component.literal("§7« Anterior ");
+        }
+
+        return prev.append(middle).append(next);
+    }
 
 }
