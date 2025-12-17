@@ -153,7 +153,7 @@ public final class CommandRegister {
                     // página 1 por padrão
                     .executes(ctx -> Mercado.list(ctx, 1))
 
-                    // /extrato <page>
+                    // /mercado <page>
                     .then(Commands.argument("page", IntegerArgumentType.integer(1))
                         .executes(ctx -> {
                             int page = IntegerArgumentType.getInteger(ctx, "page");
@@ -197,6 +197,62 @@ public final class CommandRegister {
                     )
                 )
             )
+
+            // /servermarket
+            .then(
+                dispatcher.register(
+                    Commands.literal("servermarket")
+                    .then(
+                        Commands.literal("buy")
+
+                        // página 1 por padrão
+                        .executes(ctx -> ServerMarket.listBuy(ctx, 1))
+
+                        // /servermarket buy <page>
+                        .then(Commands.argument("page", IntegerArgumentType.integer(1))
+                            .executes(ctx -> {
+                                int page = IntegerArgumentType.getInteger(ctx, "page");
+                                return ServerMarket.listBuy(ctx, page);
+                            })
+                        )
+
+                        // /servermarket buy item <id>
+                        .then(
+                            Commands.literal("item")
+                            .then(
+                                Commands.argument("id", IntegerArgumentType.integer(1))
+                                .executes(ServerMarket::buy)
+                            )
+                        )
+                    )
+                    // /servermarket sell
+                    .then(
+                        Commands.literal("sell")
+
+                        // página 1 por padrão
+                        .executes(ctx -> ServerMarket.listSell(ctx, 1))
+
+                        // /servermarket sell <page>
+                        .then(Commands.argument("page", IntegerArgumentType.integer(1))
+                            .executes(ctx -> {
+                                int page = IntegerArgumentType.getInteger(ctx, "page");
+                                return ServerMarket.listSell(ctx, page);
+                            })
+                        )
+                        
+                        // /servermarket sell item <id>
+                        .then(
+                            Commands.literal("item")
+                            .then(
+                                Commands.argument("id", IntegerArgumentType.integer(1))
+                                .executes(ServerMarket::sell)
+                            )
+                        )
+                    ) 
+                )
+            )
+
+                
         );
     }
 }

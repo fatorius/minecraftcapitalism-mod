@@ -7,6 +7,6 @@ public record MarketListing(
         UUID owner,
         String itemId,
         int quantity,
-        int unitPrice,
+        int price,
         long createdAt) {
 }

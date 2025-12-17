@@ -86,6 +86,39 @@ public final class DatabaseService {
             """);
     }
 
+    private static void createServerSellListingTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+                   CREATE TABLE IF NOT EXISTS server_sell_listings (
+                       id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       item_id TEXT NOT NULL,
+                       price INTEGER NOT NULL CHECK (price > 0)
+                   );
+                """);
+        stmt.execute("""
+                CREATE INDEX IF NOT EXISTS idx_market_item ON server_sell_listings(item_id);
+            """);
+        stmt.execute("""
+                CREATE INDEX IF NOT EXISTS idx_market_price ON server_sell_listings(price);
+            """);
+    }
+
+    private static void createServerBuyListingTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+                   CREATE TABLE IF NOT EXISTS server_buy_listings (
+                       id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       item_id TEXT NOT NULL,
+                       price INTEGER NOT NULL CHECK (price > 0)
+                   );
+                """);
+        stmt.execute("""
+                CREATE INDEX IF NOT EXISTS idx_market_item ON server_buy_listings(item_id);
+            """);
+        stmt.execute("""
+                CREATE INDEX IF NOT EXISTS idx_market_price ON server_buy_listings(price);
+            """);
+    }
+
+
     private static void createTransactionsTable(Statement stmt) throws SQLException {
         stmt.execute("""
                 CREATE TABLE IF NOT EXISTS transactions (
@@ -124,6 +157,8 @@ public final class DatabaseService {
             createTransactionsTable(stmt);
             createInvoiceTable(stmt);
             createListingTable(stmt);
+            createServerSellListingTable(stmt);
+            createServerBuyListingTable(stmt);
         }
     }
 }

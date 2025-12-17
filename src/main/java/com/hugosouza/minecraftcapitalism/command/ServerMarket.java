@@ -1,16 +1,14 @@
 package com.hugosouza.minecraftcapitalism.command;
 
 import com.hugosouza.minecraftcapitalism.database.DbExecutor;
-import com.hugosouza.minecraftcapitalism.interfaces.MarketListing;
+import com.hugosouza.minecraftcapitalism.interfaces.ServerMarketListing;
 import com.hugosouza.minecraftcapitalism.service.AccountService;
-import com.hugosouza.minecraftcapitalism.service.ListingService;
+import com.hugosouza.minecraftcapitalism.service.ServerMarketService;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.arguments.item.ItemArgument;
-import net.minecraft.commands.arguments.item.ItemInput;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.*;
 import net.minecraft.resources.ResourceLocation;
@@ -23,57 +21,52 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.UUID;
 
-public class Mercado {
+public class ServerMarket {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final int PAGE_SIZE = 5;
 
     public static int sell(CommandContext<CommandSourceStack> ctx)
             throws CommandSyntaxException {
 
-        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        ServerPlayer seller = ctx.getSource().getPlayerOrException();
 
-        ItemInput input = ItemArgument.getItem(ctx, "item");
-        Item item = input.getItem();
-
-        int quantity = IntegerArgumentType.getInteger(ctx, "quantidade");
-        int unitPrice = IntegerArgumentType.getInteger(ctx, "valor");
-
-        if (!userHasItem(player, item, quantity)) {
-            player.sendSystemMessage(
-                    Component.literal("Você não possui itens suficientes")
-            );
-            return 0;
-        }
-
-        removeItemFromPlayerInventory(player, item, quantity);
-
-        String itemId = BuiltInRegistries.ITEM.getKey(item).toString();
+        int listingId = IntegerArgumentType.getInteger(ctx, "id");
 
         DbExecutor.runAsync(() -> {
             try {
-                ListingService.create(
-                        player.getUUID(),
-                        itemId,
-                        quantity,
-                        unitPrice
-                );
+                ServerMarketListing listing = ServerMarketService.getSellAdById(listingId);
 
-                ctx.getSource().getServer().execute(() ->
-                        player.sendSystemMessage(
-                                Component.literal("Item listado no mercado com sucesso!")
-                        )
-                );
-
-            } catch (SQLException e) {
-                ctx.getSource().getServer().execute(() -> {
-                    player.getInventory().add(
-                            new ItemStack(item, quantity)
+                if (listing == null) {
+                    ctx.getSource().getServer().execute(() ->
+                            seller.sendSystemMessage(Component.literal("Anúncio não encontrado"))
                     );
-                    player.sendSystemMessage(
-                            Component.literal("Erro ao listar item no mercado")
+                    return;
+                }
+
+                int totalPrice = listing.price();
+
+                AccountService.addBalance(seller.getUUID(), totalPrice, "Venda de " + listing.itemId());
+
+                ctx.getSource().getServer().execute(() -> {
+                    ResourceLocation rl = ResourceLocation.parse(listing.itemId());
+                    Item item = BuiltInRegistries.ITEM.get(rl);
+
+                    removeItemFromPlayerInventory(
+                            seller,
+                            item
+                    );
+
+                    seller.sendSystemMessage(
+                            Component.literal("Venda realizada com sucesso!")
                     );
                 });
 
+            } catch (SQLException e) {
+                ctx.getSource().getServer().execute(() ->
+                        seller.sendSystemMessage(
+                                Component.literal("Erro interno ao comprar item")
+                        )
+                );
                 LOGGER.error(e.toString());
             }
         });
@@ -89,7 +82,7 @@ public class Mercado {
 
         DbExecutor.runAsync(() -> {
             try {
-                MarketListing listing = ListingService.getById(listingId);
+                ServerMarketListing listing = ServerMarketService.getBuyAdById(listingId);
 
                 if (listing == null) {
                     ctx.getSource().getServer().execute(() ->
@@ -99,14 +92,6 @@ public class Mercado {
                 }
 
                 UUID buyerId = buyer.getUUID();
-                UUID sellerId = listing.owner();
-
-                if (buyerId.equals(sellerId)) {
-                    ctx.getSource().getServer().execute(() ->
-                            buyer.sendSystemMessage(Component.literal("Você não pode comprar seu próprio item"))
-                    );
-                    return;
-                }
 
                 int totalPrice = listing.price();
                 int balance = AccountService.getBalance(buyerId);
@@ -118,44 +103,22 @@ public class Mercado {
                     return;
                 }
 
-                boolean success = ListingService.buyListing(
-                        listing,
-                        buyerId
-                );
+                AccountService.removeBalance(buyerId, totalPrice, "Compra de " + listing.itemId());
 
                 ctx.getSource().getServer().execute(() -> {
-                    if (success) {
-                        ResourceLocation itemId = ResourceLocation.parse(listing.itemId());
+                    ResourceLocation itemId = ResourceLocation.parse(listing.itemId());
 
-                        ItemStack stack = new ItemStack(
-                                BuiltInRegistries.ITEM.get(itemId),
-                                listing.quantity()
-                        );
+                    ItemStack stack = new ItemStack(
+                            BuiltInRegistries.ITEM.get(itemId),
+                            1
+                    );
 
-                        buyer.getInventory().add(stack);
+                    buyer.getInventory().add(stack);
 
-                        buyer.sendSystemMessage(
-                                Component.literal("Compra realizada com sucesso!")
-                        );
-
-                        ServerPlayer seller =
-                                ctx.getSource().getServer().getPlayerList().getPlayer(sellerId);
-
-                        if (seller != null) {
-                            seller.sendSystemMessage(
-                                    Component.literal(
-                                            buyer.getName().getString() +
-                                                    " comprou seu item por $" + totalPrice
-                                    )
-                            );
-                        }
-                    } else {
-                        buyer.sendSystemMessage(
-                                Component.literal("Erro ao processar compra")
-                        );
-                    }
+                    buyer.sendSystemMessage(
+                            Component.literal("Compra realizada com sucesso!")
+                    );
                 });
-
             } catch (SQLException e) {
                 ctx.getSource().getServer().execute(() ->
                         buyer.sendSystemMessage(
@@ -169,132 +132,57 @@ public class Mercado {
         return 1;
     }
 
-    public static int cancel(CommandContext<CommandSourceStack> ctx)
+    public static int listBuy(CommandContext<CommandSourceStack> ctx, int page)
             throws CommandSyntaxException {
-
         ServerPlayer player = ctx.getSource().getPlayerOrException();
-        int listingId = IntegerArgumentType.getInteger(ctx, "id");
 
         DbExecutor.runAsync(() -> {
             try {
-                MarketListing listing = ListingService.getById(listingId);
+                ArrayList<ServerMarketListing> listings =
+                        ServerMarketService.listBuy(PAGE_SIZE, (page - 1) * PAGE_SIZE);
 
-                if (listing == null) {
-                    ctx.getSource().getServer().execute(() ->
-                            player.sendSystemMessage(
-                                    Component.literal("Anúncio não encontrado")
-                            )
-                    );
-                    return;
-                }
-
-                UUID owner = listing.owner();
-
-                if (!player.getUUID().equals(owner)) {
-                    ctx.getSource().getServer().execute(() ->
-                            player.sendSystemMessage(
-                                    Component.literal("Você não é o dono deste anúncio")
-                            )
-                    );
-                    return;
-                }
-
-                boolean removed = ListingService.deleteById(listingId);
-
-                ctx.getSource().getServer().execute(() -> {
-                    if (removed) {
-                        // Devolver os itens
-                        ItemStack stack = new ItemStack(
-                                BuiltInRegistries.ITEM.get(
-                                        ResourceLocation.parse(listing.itemId())
-                                ),
-                                listing.quantity()
-                        );
-
-                        player.getInventory().add(stack);
-
-                        player.sendSystemMessage(
-                                Component.literal("Anúncio cancelado e itens devolvidos")
-                        );
-                    } else {
-                        player.sendSystemMessage(
-                                Component.literal("Erro ao cancelar anúncio")
-                        );
-                    }
-                });
+                ctx.getSource().getServer().execute(() ->
+                        sendBuyPage(player, listings, page)
+                );
 
             } catch (SQLException e) {
                 ctx.getSource().getServer().execute(() ->
-                        player.sendSystemMessage(
-                                Component.literal("Erro interno ao cancelar anúncio")
-                        )
+                        player.sendSystemMessage(Component.literal("Erro ao carregar mercado do server"))
                 );
+                LOGGER.error(e.toString());
             }
         });
 
         return 1;
     }
 
-    public static int list(CommandContext<CommandSourceStack> ctx, int page)
-            throws CommandSyntaxException {
-        ServerPlayer player = ctx.getSource().getPlayerOrException();
-
-        DbExecutor.runAsync(() -> {
-            try {
-                ArrayList<MarketListing> listings =
-                        ListingService.list(PAGE_SIZE, (page - 1) * PAGE_SIZE);
-
-                ctx.getSource().getServer().execute(() ->
-                        sendPage(player, listings, page, ctx)
-                );
-
-            } catch (SQLException e) {
-                ctx.getSource().getServer().execute(() ->
-                        player.sendSystemMessage(Component.literal("Erro ao carregar mercado"))
-                );
-            }
-        });
-
-        return 1;
-    }
-
-    public static int myAds(CommandContext<CommandSourceStack> ctx, int page)
+    public static int listSell(CommandContext<CommandSourceStack> ctx, int page)
             throws CommandSyntaxException {
 
         ServerPlayer player = ctx.getSource().getPlayerOrException();
 
         DbExecutor.runAsync(() -> {
             try {
-                ArrayList<MarketListing> listings =
-                        ListingService.listMyAds(PAGE_SIZE, (page - 1) * PAGE_SIZE, player.getUUID().toString());
+                ArrayList<ServerMarketListing> listings =
+                        ServerMarketService.listSell(PAGE_SIZE, (page - 1) * PAGE_SIZE, player.getUUID().toString());
 
                 ctx.getSource().getServer().execute(() ->
-                        sendMyAdsPage(player, listings, page, ctx)
+                        sendSellPage(player, listings, page)
                 );
 
             } catch (SQLException e) {
                 ctx.getSource().getServer().execute(() ->
-                        player.sendSystemMessage(Component.literal("Erro ao carregar seus anuncios"))
+                        player.sendSystemMessage(Component.literal("Erro ao carregar mercado do server"))
                 );
+                LOGGER.error(e.toString());
             }
         });
 
         return 1;
     }
 
-    private static boolean userHasItem(ServerPlayer player, Item item, int quantity) {
-        int count = 0;
-        for (ItemStack stack : player.getInventory().items) {
-            if (stack.getItem() == item) {
-                count += stack.getCount();
-                if (count >= quantity) return true;
-            }
-        }
-        return false;
-    }
-
-    private static void removeItemFromPlayerInventory(ServerPlayer player, Item item, int quantity) {
-        int remaining = quantity;
+    private static void removeItemFromPlayerInventory(ServerPlayer player, Item item) {
+        int remaining = 1;
         for (ItemStack stack : player.getInventory().items) {
             if (stack.getItem() == item) {
                 int removed = Math.min(stack.getCount(), remaining);
@@ -305,11 +193,10 @@ public class Mercado {
         }
     }
 
-    private static void sendPage(
+    private static void sendSellPage(
             ServerPlayer player,
-            ArrayList<MarketListing> list,
-            int page,
-            CommandContext<CommandSourceStack> ctx
+            ArrayList<ServerMarketListing> list,
+            int page
     ) {
         player.sendSystemMessage(
                 Component.literal("§6=== Mercado (Página " + page + ") ===")
@@ -320,23 +207,23 @@ public class Mercado {
             return;
         }
 
-        for (MarketListing l : list) {
+        for (ServerMarketListing l : list) {
             Component line = Component.literal(
-                            l.quantity() + "x" + " - " + l.itemId()
+                            "1x - " + l.itemId()
                     ).withStyle(style -> style.withColor(TextColor.fromRgb(0x00FFAA)))
                     .append(Component.literal(
                             " | $" + l.price()
                     ).withStyle(style -> style.withColor(TextColor.fromRgb(0xFFFF55))))
                     .append(Component.literal(" "))
                     .append(
-                            Component.literal("[Comprar]")
+                            Component.literal("[Vender]")
                                     .withStyle(style -> style
                                             .withColor(TextColor.fromRgb(0x00FF00))
                                             .withBold(true)
                                             .withClickEvent(
                                                     new ClickEvent(
                                                             ClickEvent.Action.RUN_COMMAND,
-                                                            "/mercado buy " + l.id()
+                                                            "/servermarket sell item " + l.id()
                                                     )
                                             )
                                             .withHoverEvent(
@@ -350,10 +237,10 @@ public class Mercado {
             player.sendSystemMessage(line);
         }
 
-        player.sendSystemMessage(buildPaginationComponent(page));
+        player.sendSystemMessage(buildSellPaginationComponent(page));
     }
 
-    private static Component buildPaginationComponent(int page) {
+    private static Component buildSellPaginationComponent(int page) {
         MutableComponent prev = Component.literal("« Anterior ")
                 .withStyle(style -> style.withClickEvent(
                         new ClickEvent(
@@ -381,11 +268,10 @@ public class Mercado {
         return prev.append(middle).append(next);
     }
 
-    private static void sendMyAdsPage(
+    private static void sendBuyPage(
             ServerPlayer player,
-            ArrayList<MarketListing> list,
-            int page,
-            CommandContext<CommandSourceStack> ctx
+            ArrayList<ServerMarketListing> list,
+            int page
     ) {
         player.sendSystemMessage(
                 Component.literal("§6=== Mercado (Página " + page + ") ===")
@@ -396,23 +282,23 @@ public class Mercado {
             return;
         }
 
-        for (MarketListing l : list) {
+        for (ServerMarketListing l : list) {
             Component line = Component.literal(
-                            l.quantity() + "x" + " - " + l.itemId()
+                            "1x - " + l.itemId()
                     ).withStyle(style -> style.withColor(TextColor.fromRgb(0x00FFAA)))
                     .append(Component.literal(
                             " | $" + l.price()
                     ).withStyle(style -> style.withColor(TextColor.fromRgb(0xFFFF55))))
                     .append(Component.literal(" "))
                     .append(
-                            Component.literal("[Cancelar]")
+                            Component.literal("[Comprar]")
                                     .withStyle(style -> style
-                                            .withColor(TextColor.fromRgb(0xFF0000))
+                                            .withColor(TextColor.fromRgb(0x00FF99))
                                             .withBold(true)
                                             .withClickEvent(
                                                     new ClickEvent(
                                                             ClickEvent.Action.RUN_COMMAND,
-                                                            "/mercado cancel " + l.id()
+                                                            "/servermarket buy item " + l.id()
                                                     )
                                             )
                                             .withHoverEvent(
@@ -426,10 +312,10 @@ public class Mercado {
             player.sendSystemMessage(line);
         }
 
-        player.sendSystemMessage(buildMyAdsPaginationComponent(page));
+        player.sendSystemMessage(buildBuyPaginationComponent(page));
     }
 
-    private static Component buildMyAdsPaginationComponent(int page) {
+    private static Component buildBuyPaginationComponent(int page) {
         MutableComponent prev = Component.literal("« Anterior ")
                 .withStyle(style -> style.withClickEvent(
                         new ClickEvent(
@@ -456,5 +342,4 @@ public class Mercado {
 
         return prev.append(middle).append(next);
     }
-
 }

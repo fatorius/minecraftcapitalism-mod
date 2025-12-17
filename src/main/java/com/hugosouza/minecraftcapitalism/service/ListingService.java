@@ -142,7 +142,7 @@ public class ListingService {
         conn.setAutoCommit(false);
 
         try {
-            int total = listing.quantity() * listing.unitPrice();
+            int total = listing.quantity() * listing.price();
 
             AccountService.removeBalance(buyer, total, "COMPRA de " + listing.itemId());
 
