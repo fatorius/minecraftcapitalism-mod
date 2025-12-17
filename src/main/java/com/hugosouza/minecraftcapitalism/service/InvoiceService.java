@@ -10,7 +10,6 @@ import java.sql.Statement;
 import java.util.UUID;
 
 public class InvoiceService {
-
     public static int createInvoice(UUID from, UUID to, int amount) throws SQLException {
         String sql = "INSERT INTO invoices (from_uuid, to_uuid, amount, created_at) VALUES (?, ?, ?, ?)";
         try (PreparedStatement stmt = DatabaseService.get().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {

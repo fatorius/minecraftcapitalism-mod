@@ -15,6 +15,7 @@ import java.sql.SQLException;
 import java.util.Random;
 
 public final class Tigrinho {
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final Random RANDOM = new Random();
 
     public static int apostar(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
@@ -60,6 +61,7 @@ public final class Tigrinho {
                 ctx.getSource().getServer().execute(() ->
                         player.sendSystemMessage(Component.literal("Erro ao processar aposta:" + e.getMessage()))
                 );
+                LOGGER.error(e.toString());
             }
         });
 

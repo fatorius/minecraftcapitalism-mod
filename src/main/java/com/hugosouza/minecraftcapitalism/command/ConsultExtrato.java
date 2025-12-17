@@ -5,12 +5,14 @@ import com.hugosouza.minecraftcapitalism.interfaces.Transaction;
 import com.hugosouza.minecraftcapitalism.service.TransactionService;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.server.level.ServerPlayer;
+import org.slf4j.Logger;
 
 import java.sql.SQLException;
 import java.time.Instant;
@@ -20,6 +22,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 public class ConsultExtrato {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private static final int PAGE_SIZE = 5;
 
     public static int run(CommandContext<CommandSourceStack> ctx, int page)
@@ -41,6 +45,8 @@ public class ConsultExtrato {
                                 Component.literal("Erro ao carregar extrato")
                         )
                 );
+
+                LOGGER.error(e.toString());
             }
         });
 
@@ -83,8 +89,6 @@ public class ConsultExtrato {
                     } catch (NullPointerException ignored) {}
                 }
             }
-
-
 
             int amount = tx.amount();
 

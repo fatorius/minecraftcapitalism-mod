@@ -4,14 +4,18 @@ import com.hugosouza.minecraftcapitalism.database.DbExecutor;
 import com.hugosouza.minecraftcapitalism.service.AccountService;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import org.slf4j.Logger;
 
 import java.sql.SQLException;
 import java.util.UUID;
 
 public class ConsultSaldo {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     public static int run(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         UUID uuid = player.getUUID();
@@ -30,6 +34,8 @@ public class ConsultSaldo {
                                 Component.literal("Erro ao consultar saldo")
                         )
                 );
+
+                LOGGER.error(e.toString());
             }
         });
         return 1;

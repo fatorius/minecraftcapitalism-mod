@@ -11,7 +11,7 @@ import java.util.UUID;
 
 
 public class AccountService {
-    public static final Logger LOGGER = LogUtils.getLogger();
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public static boolean transfer(UUID from, UUID to, int amount) throws SQLException {
         DatabaseService.get().setAutoCommit(false);

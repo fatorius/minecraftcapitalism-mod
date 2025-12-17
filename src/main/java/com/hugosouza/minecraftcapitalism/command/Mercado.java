@@ -5,6 +5,7 @@ import com.hugosouza.minecraftcapitalism.service.ListingService;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.item.ItemArgument;
 import net.minecraft.commands.arguments.item.ItemInput;
@@ -13,10 +14,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import org.slf4j.Logger;
 
 import java.sql.SQLException;
 
 public class Mercado {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     public static int sell(CommandContext<CommandSourceStack> ctx)
             throws CommandSyntaxException {
 
@@ -63,6 +67,8 @@ public class Mercado {
                             Component.literal("Erro ao listar item no mercado")
                     );
                 });
+
+                LOGGER.error(e.toString());
             }
         });
 

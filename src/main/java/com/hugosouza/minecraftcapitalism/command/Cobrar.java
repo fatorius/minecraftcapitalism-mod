@@ -7,16 +7,20 @@ import com.hugosouza.minecraftcapitalism.service.InvoiceService;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.server.level.ServerPlayer;
+import org.slf4j.Logger;
 
 import java.sql.SQLException;
 
 public class Cobrar {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     public static int criar(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer sender = ctx.getSource().getPlayerOrException();
         ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
@@ -56,6 +60,8 @@ public class Cobrar {
             } catch (SQLException e) {
                 ctx.getSource().getServer().execute(() ->
                         sender.sendSystemMessage(Component.literal("Erro ao criar cobrança")));
+
+                LOGGER.error(e.toString());
             }
         });
 
@@ -104,6 +110,8 @@ public class Cobrar {
                 ctx.getSource().getServer().execute(() ->
                         payer.sendSystemMessage(Component.literal("Erro ao processar pagamento da cobrança"))
                 );
+
+                LOGGER.error(e.toString());
             }
         });
 
@@ -143,6 +151,8 @@ public class Cobrar {
                 ctx.getSource().getServer().execute(() ->
                         payer.sendSystemMessage(Component.literal("Erro ao processar recusa da cobrança"))
                 );
+
+                LOGGER.error(e.toString());
             }
         });
 

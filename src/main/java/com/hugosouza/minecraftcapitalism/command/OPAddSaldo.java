@@ -5,14 +5,18 @@ import com.hugosouza.minecraftcapitalism.service.AccountService;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import org.slf4j.Logger;
 
 import java.sql.SQLException;
 
 public class OPAddSaldo {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     public static int run(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
         int delta = IntegerArgumentType.getInteger(ctx, "valor");
@@ -35,6 +39,8 @@ public class OPAddSaldo {
                                 Component.literal("Erro ao adicionar saldo")
                         )
                 );
+
+                LOGGER.error(e.toString());
             }
         });
 
